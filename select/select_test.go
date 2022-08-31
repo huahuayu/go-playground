@@ -1,6 +1,7 @@
 package _select
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -118,6 +119,23 @@ loop:
 		case <-time.After(2 * time.Second):
 			t.Log("timeout")
 			break loop
+		}
+	}
+}
+
+// select with context
+func TestSelectWithContext(t *testing.T) {
+	t.Log("select with context")
+	ch := make(chan struct{})
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	for {
+		select {
+		case <-ch:
+			t.Log("never reach here")
+		case <-ctx.Done():
+			t.Log("ctx done")
+			return
 		}
 	}
 }
