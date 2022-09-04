@@ -9,14 +9,13 @@ import (
 var validate = validator.New()
 
 func hello(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-	default:
-		ResponseErr(w, ErrMethodNotAllowed)
+	locale := req.Header.Get("Locale")
+	if req.Method != http.MethodGet {
+		ResponseErr(w, locale, ErrMethodNotAllowed)
 		return
 	}
 	if !req.URL.Query().Has("name") {
-		ResponseErr(w, ErrInvalidParam)
+		ResponseErr(w, locale, ErrInvalidParam)
 		return
 	}
 	name := req.URL.Query().Get("name")
@@ -29,33 +28,36 @@ func user(w http.ResponseWriter, req *http.Request) {
 		Email    string `json:"email" validate:"required,email"`
 		Gender   string `json:"gender,omitempty"`
 	}
-	switch req.Method {
-	case http.MethodPost:
-		user := User{}
-		err := json.NewDecoder(req.Body).Decode(&user)
-		if err != nil {
-			ResponseErr(w, ErrInvalidParam)
-			return
-		}
-		err = validate.Struct(user)
-		if err != nil {
-			ResponseErr(w, ErrInvalidParam, err.Error())
-			return
-		}
-		ResponseOK(w, user)
-	default:
-		ResponseErr(w, ErrMethodNotAllowed)
+	locale := req.Header.Get("Locale")
+	if req.Method != http.MethodPost {
+		ResponseErr(w, locale, ErrMethodNotAllowed)
 		return
 	}
+	user := User{}
+	err := json.NewDecoder(req.Body).Decode(&user)
+	if err != nil {
+		ResponseErr(w, locale, ErrInvalidParam)
+		return
+	}
+	err = validate.Struct(user)
+	if err != nil {
+		ResponseErr(w, locale, ErrInvalidParam, err.Error())
+		return
+	}
+	ResponseOK(w, user)
 }
 
-func serve() {
-	InitMsgLanguage(ENGLISH)
-	// get
+func Serve() {
+	// Get
 	http.HandleFunc("/hello", hello)
-	// post
+	// Post
 	http.HandleFunc("/user", user)
-	err := http.ListenAndServe(":6000", nil)
+	// File server
+	// to Serve a directory on disk (/tmp) under an alternate URL
+	// path (/file/), use StripPrefix to modify the request
+	// URL's path before the FileServer sees it:
+	http.Handle("/file/", http.StripPrefix("/file/", http.FileServer(http.Dir("/tmp"))))
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
 	}
