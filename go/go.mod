@@ -1,4 +1,4 @@
-module github.com/huahuayu/go-playground
+module github.com/huahuayu/playground/go
 
 go 1.19
 
